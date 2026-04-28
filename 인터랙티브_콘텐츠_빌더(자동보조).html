@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인터랙티브 콘텐츠 빌더</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{display:flex;font-family:'Noto Sans KR',sans-serif;font-size:14px;background:#f0f2f5;color:#1a1f2e}
+
+/* ── Sidebar ── */
+#sidebar{width:200px;flex-shrink:0;background:#fff;border-right:1px solid #e2e5ea;display:flex;flex-direction:column;height:100vh;box-shadow:2px 0 8px rgba(0,0,0,.06)}
+.sb-brand{padding:18px 16px 14px;border-bottom:1px solid #e2e5ea;font-size:12px;font-weight:700;color:#2563eb;line-height:1.5}
+#sb-nav{flex:1;padding:8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.sb-btn{width:100%;text-align:left;padding:8px 11px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:#64748b;transition:all .15s}
+.sb-btn:hover{background:#f1f5f9;color:#1a1f2e}
+.sb-btn.on{background:#eff6ff;color:#2563eb;font-weight:600;border:1px solid #bfdbfe}
+.sb-footer{padding:12px 16px;border-top:1px solid #e2e5ea;background:#fafbfc}
+.prog-bar{height:4px;background:#e2e5ea;border-radius:2px;margin-top:6px;overflow:hidden}
+.prog-fill{height:100%;background:#2563eb;border-radius:2px;transition:width .3s}
+.prog-lbl{font-size:10px;color:#94a3b8;margin-top:4px}
+
+/* ── Main ── */
+#main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;background:#f8fafc}
+#panels{flex:1;overflow-y:auto}
+.panel{display:none;padding:28px;max-width:880px}
+.panel.on{display:block}
+.p-title{font-size:15px;font-weight:700;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #e2e5ea;color:#1a1f2e}
+.nav-row{display:flex;justify-content:space-between;align-items:center;padding:12px 28px;border-top:1px solid #e2e5ea;flex-shrink:0;background:#fff}
+
+/* ── Form elements ── */
+.field{margin-bottom:14px}
+.field label,.flabel{display:block;font-size:11px;font-weight:600;color:#64748b;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+input[type=text],input[type=number],input[type=password],textarea,select{width:100%;padding:8px 11px;font-size:13px;font-family:inherit;background:#fff;border:1.5px solid #e2e5ea;border-radius:7px;color:#1a1f2e;outline:none;transition:border .15s}
+input[type=text]:focus,input[type=password]:focus,textarea:focus,select:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+textarea{resize:vertical;min-height:80px}
+input[type=radio]{accent-color:#2563eb}
+
+.prim{padding:8px 18px;background:#2563eb;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
+.prim:hover{background:#1d4ed8}
+.ghost{padding:7px 14px;background:#fff;color:#64748b;border:1.5px solid #e2e5ea;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s}
+.ghost:hover{background:#f1f5f9;border-color:#cbd5e1;color:#1a1f2e}
+.xbtn{background:none;border:none;color:#94a3b8;cursor:pointer;font-size:13px;padding:2px 5px;border-radius:3px;line-height:1;transition:color .15s}
+.xbtn:hover{color:#ef4444}
+
+/* ── Image upload box ── */
+.img-box{border:2px dashed #cbd5e1;border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;display:block;background:#fff}
+.img-box:hover{border-color:#2563eb;background:#eff6ff}
+.img-box input{display:none}
+.img-box img{max-height:110px;max-width:100%;border-radius:6px;display:block;margin:0 auto}
+.img-ph{font-size:11px;color:#94a3b8}
+
+/* ── Overlay editor ── */
+.ov-wrap{position:relative;border:2px solid #e2e5ea;border-radius:8px;overflow:visible;background:#f1f5f9;cursor:crosshair}
+.ov-wrap img{display:block;width:100%;border-radius:6px;pointer-events:none}
+.ov-ph{height:100px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#94a3b8;cursor:default}
+.marker{position:absolute;transform:translate(-50%,-50%);width:8%;padding-top:8%;cursor:pointer;z-index:5;transition:all .15s}
+.marker-in{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;pointer-events:none}
+.hint{font-size:11px;color:#94a3b8;margin-bottom:7px}
+
+/* ── List items ── */
+.li{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;cursor:pointer;border:1.5px solid transparent;margin-bottom:3px;transition:all .15s;background:#fff}
+.li:hover{background:#f8fafc;border-color:#e2e5ea}
+.li.on{background:#eff6ff;border-color:#bfdbfe}
+.badge{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+
+/* ── Viewer tabs ── */
+.vtabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.vtab{padding:6px 13px;border:1.5px solid #e2e5ea;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;color:#64748b;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px}
+.vtab:hover{border-color:#2563eb;color:#2563eb}
+.vtab.on{background:#eff6ff;border-color:#2563eb;color:#2563eb;font-weight:600}
+.v-editor{border:1.5px solid #e2e5ea;border-radius:10px;padding:16px;margin-top:4px;background:#fff}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* ── Quiz ── */
+.q-item{border:1.5px solid #e2e5ea;border-radius:10px;padding:16px;margin-bottom:12px;background:#fff}
+.q-choices{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.q-choice{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:6px;border:1.5px solid #e2e5ea;background:#f8fafc}
+.q-choice input[type=text]{background:transparent;border:none;font-size:12px;padding:0;color:#1a1f2e}
+
+/* ── Export ── */
+.check-row{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:8px}
+.dl-btn{padding:11px 26px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
+.dl-btn:hover{background:#1d4ed8}
+.done{font-size:12px;color:#2563eb;margin-left:10px;font-weight:600}
+
+/* ── AI 기능 ── */
+.ai-btn{padding:6px 12px;background:#f5f3ff;color:#7c3aed;border:1.5px solid #c4b5fd;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:5px;font-weight:600}
+.ai-btn:hover{background:#ede9fe;border-color:#7c3aed}
+.ai-btn:disabled{opacity:.4;cursor:not-allowed}
+.ai-spin{display:inline-block;width:10px;height:10px;border:2px solid #c4b5fd;border-top-color:#7c3aed;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-modal{position:fixed;inset:0;z-index:9000;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.ai-modal.on{display:flex}
+.ai-card{background:#fff;border:1.5px solid #e2e5ea;border-radius:14px;width:100%;max-width:540px;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.ai-card-head{padding:16px 20px;border-bottom:1px solid #e2e5ea;display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border-radius:14px 14px 0 0}
+.ai-card-title{font-size:14px;font-weight:700;color:#7c3aed}
+.ai-card-body{padding:18px 20px;overflow-y:auto;flex:1}
+.ai-card-foot{padding:14px 20px;border-top:1px solid #e2e5ea;display:flex;gap:8px;justify-content:flex-end;background:#fafbfc;border-radius:0 0 14px 14px}
+.ai-result{font-size:12px;line-height:1.75;color:#374151;white-space:pre-wrap}
+.ai-result-item{margin-bottom:14px;padding:12px 14px;background:#f8fafc;border-radius:8px;border:1.5px solid #e2e5ea}
+.ai-result-item .label{font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.ai-result-item .val{font-size:12px;color:#1a1f2e;line-height:1.7}
+.apikey-note{font-size:10px;color:#94a3b8;margin-top:5px;line-height:1.6}
+
+</style>
+</head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+<body>
+
+<!-- Sidebar -->
+<div id="sidebar">
+  <div class="sb-brand">🏛 인터랙티브<br>콘텐츠 빌더</div>
+  <nav id="sb-nav">
+    <button class="sb-btn on" onclick="goStep(0)">📋 기본 설정</button>
+    <button class="sb-btn" onclick="goStep(1)">🖼 메인 이미지</button>
+    <button class="sb-btn" onclick="goStep(2)">🔤 키워드 팝업</button>
+    <button class="sb-btn" onclick="goStep(3)">📖 팝업 뷰어</button>
+    <button class="sb-btn" onclick="goStep(4)">❓ 퀴즈</button>
+    <button class="sb-btn" onclick="goStep(5)">⬇ 내보내기</button>
+  </nav>
+  <div class="sb-footer">
+    <div style="font-size:10px;color:#484f58">진행도</div>
+    <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:16.6%"></div></div>
+    <div class="prog-lbl" id="progLbl">1 / 6</div>
+  </div>
+</div>
+
+<!-- Main -->
+<div id="main">
+  <div id="panels">
+
+    <!-- Step 0 -->
+    <div class="panel on" id="p0">
+      <div class="p-title">📋 기본 설정</div>
+      <div style="max-width:480px;display:flex;flex-direction:column;gap:12px">
+        <div class="field"><label>제목</label><input type="text" id="fTitle" placeholder="예: 임진왜란을 극복하다"></div>
+        <div class="field"><label>부제목 (선택)</label><input type="text" id="fSub" placeholder="예: 조선의 항쟁과 승리의 기록"></div>
+        <div style="height:1px;background:#21262d;margin:4px 0"></div>
+        <div class="field">
+          <label>✨ AI 기능 — Anthropic API 키</label>
+          <div style="display:flex;gap:6px">
+            <input type="password" id="apiKeyInput" placeholder="sk-ant-..." oninput="apiKey=this.value" style="flex:1">
+            <button class="ghost" onclick="toggleApiKeyVis()" id="apiKeyToggle" style="flex-shrink:0;padding:6px 10px;font-size:11px">표시</button>
+          </div>
+          <div class="apikey-note">
+            키는 이 페이지 안에서만 사용되며 외부로 전송되지 않습니다.<br>
+            API 호출 시 소량의 비용이 발생합니다 (Anthropic 요금 기준).
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="panel" id="p1">
+      <div class="p-title">🖼 메인 이미지</div>
+      <div style="max-width:520px">
+        <div class="hint">콘텐츠의 배경이 되는 이미지입니다. JPG, PNG를 지원합니다.</div>
+        <label class="img-box" id="mainBox">
+          <div class="img-ph" id="mainPh">📁 이미지 또는 PDF 업로드</div>
+          <img id="mainPrev" style="display:none" alt="">
+          <input type="file" accept="image/*,.pdf" onchange="loadMain(this)">
+        </label>
+        <button id="mainDel" style="display:none;margin-top:6px;font-size:11px;color:#484f58;background:none;border:none;cursor:pointer" onclick="clearMain()">✕ 제거</button>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="panel" id="p2">
+      <div class="p-title">🔤 키워드 팝업 영역</div>
+      <div class="row2">
+        <div>
+          <div class="hint">이미지를 클릭하면 마커가 추가됩니다</div>
+          <div class="ov-wrap" id="kzWrap" onclick="kzClick(event)">
+            <div class="ov-ph" id="kzPh">이미지를 먼저 업로드하세요</div>
+            <img id="kzImg" style="display:none" alt="">
+          </div>
+          <div style="margin-top:8px" id="kzList"></div>
+        </div>
+        <div id="kzRight">
+          <div id="kzPlaceholder" style="display:flex;align-items:center;justify-content:center;height:200px;font-size:11px;color:#484f58;text-align:center">이미지를 클릭해<br>영역을 추가하세요</div>
+          <div id="kzForm" style="display:none;flex-direction:column;gap:11px">
+            <div class="field"><label>버튼 표시 텍스트</label><input type="text" id="kzLabel" oninput="kzUpd('label',this.value)"></div>
+            <div class="field"><label>팝업 제목</label><input type="text" id="kzTitle" oninput="kzUpd('title',this.value)"></div>
+            <div class="field">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <label style="margin:0">팝업 설명</label>
+                <button class="ai-btn" id="kzAiBtn" onclick="aiKzDesc()">✨ AI 작성</button>
+              </div>
+              <textarea id="kzDesc" oninput="kzUpd('desc',this.value)"></textarea>
+            </div>
+            <div class="field">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <label style="margin:0">이미지 검색어</label>
+                <button class="ai-btn" id="kzImgAiBtn" onclick="aiKzImgKeyword()">🔍 AI 제안</button>
+              </div>
+              <input type="text" id="kzImgKeyword" placeholder="AI 제안 또는 직접 입력" readonly style="cursor:default;color:#8b949e">
+            </div>
+            <div class="field"><label>팝업 이미지 (선택)</label>
+              <label class="img-box" style="padding:8px">
+                <div class="img-ph" id="kzImgPh">📁 업로드</div>
+                <img id="kzImgPrev" style="display:none;max-height:80px" alt="">
+                <input type="file" accept="image/*" onchange="kzLoadImg(this)">
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="panel" id="p3">
+      <div class="p-title">📖 팝업 뷰어 콘텐츠</div>
+
+      <!-- 메인 이미지 위 버튼 위치 설정 -->
+      <div style="margin-bottom:16px">
+        <div class="flabel" style="margin-bottom:4px">📍 메인 이미지 위 버튼 위치 설정</div>
+        <div class="hint" style="margin-bottom:6px">뷰어 탭 선택 후 메인 이미지를 클릭하면 '클릭 시 확대' 버튼이 배치됩니다</div>
+        <div class="ov-wrap" id="vMainWrap" onclick="vMainClick(event)" style="max-width:480px">
+          <div class="ov-ph" id="vMainPh">메인 이미지를 2단계에서 먼저 업로드하세요</div>
+          <img id="vMainImg" style="display:none" alt="">
+        </div>
+      </div>
+
+      <div class="vtabs" id="vTabs"></div>
+      <div id="vEditor" style="display:none">
+        <div class="v-editor">
+          <div class="row2">
+            <div style="display:flex;flex-direction:column;gap:11px">
+              <div class="field"><label>뷰어 이름</label><input type="text" id="vName" oninput="vUpd('name',this.value)"></div>
+              <div class="field"><label>메인 이미지</label>
+                <label class="img-box" style="padding:8px">
+                  <div class="img-ph" id="vImgPh">📁 업로드</div>
+                  <img id="vImgPrev" style="display:none;max-height:80px" alt="">
+                  <input type="file" accept="image/*" onchange="vLoadImg(this)">
+                </label>
+              </div>
+              <div class="hint">이미지 클릭 → 핫스팟 추가</div>
+              <div class="ov-wrap" id="vWrap" onclick="vHsClick(event)">
+                <div class="ov-ph" id="vWrapPh">이미지를 업로드하세요</div>
+                <img id="vWrapImg" style="display:none" alt="">
+              </div>
+              <div id="vHsList"></div>
+            </div>
+            <div id="vHsRight">
+              <div id="vHsPlaceholder" style="display:flex;align-items:center;justify-content:center;height:200px;font-size:11px;color:#484f58;text-align:center">핫스팟을 선택하거나<br>이미지를 클릭해 추가하세요</div>
+              <div id="vHsForm" style="display:none;flex-direction:column;gap:11px">
+                <div class="field"><label>레이블</label><input type="text" id="hsLabel" oninput="hsUpd('label',this.value)"></div>
+                <div class="field"><label>제목</label><input type="text" id="hsTitle" oninput="hsUpd('title',this.value)"></div>
+                <div class="field">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                    <label style="margin:0">설명</label>
+                    <button class="ai-btn" id="hsAiBtn" onclick="aiHsDesc()">✨ AI 작성</button>
+                  </div>
+                  <textarea id="hsDesc" oninput="hsUpd('desc',this.value)"></textarea>
+                </div>
+                <div class="field">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                    <label style="margin:0">이미지 검색어</label>
+                    <button class="ai-btn" id="hsImgAiBtn" onclick="aiHsImgKeyword()">🔍 AI 제안</button>
+                  </div>
+                  <input type="text" id="hsImgKeyword" placeholder="AI 제안 또는 직접 입력" readonly style="cursor:default;color:#8b949e">
+                </div>
+                <div class="field"><label>장면 이미지 (선택)</label>
+                  <label class="img-box" style="padding:8px">
+                    <div class="img-ph" id="hsImgPh">📁 업로드</div>
+                    <img id="hsImgPrev" style="display:none;max-height:80px" alt="">
+                    <input type="file" accept="image/*" onchange="hsLoadImg(this)">
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="vEmpty" style="padding:40px;text-align:center;color:#484f58;font-size:12px">
+        뷰어를 추가해 주세요
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="panel" id="p4">
+      <div class="p-title">❓ 퀴즈 섹션</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;padding:12px;background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:8px;flex-wrap:wrap">
+        <span style="font-size:11px;color:#6d28d9;flex:1;min-width:160px">제목·부제목·메인 이미지를 바탕으로 AI가 퀴즈를 자동 출제합니다</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <label style="font-size:11px;color:#8b949e;white-space:nowrap">문제 수</label>
+          <select id="aiQuizCount" style="width:60px;padding:5px 6px">
+            <option>2</option><option selected>3</option><option>4</option><option>5</option>
+          </select>
+          <button class="ai-btn" id="quizAiBtn" onclick="aiQuiz()" style="padding:7px 14px;font-size:12px">✨ AI 퀴즈 출제</button>
+        </div>
+      </div>
+      <div id="quizList" style="margin-bottom:12px"></div>
+      <button class="prim" onclick="addQuiz()">+ 직접 추가</button>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="panel" id="p5">
+      <div class="p-title">⬇ HTML 내보내기</div>
+      <div id="checkList" style="margin-bottom:20px"></div>
+      <div style="display:flex;align-items:center">
+        <button class="dl-btn" onclick="doExport()">⬇ HTML 파일 다운로드</button>
+        <span class="done" id="doneMsg" style="display:none">✓ 완료!</span>
+      </div>
+      <p style="font-size:11px;color:#484f58;margin-top:14px;line-height:1.7">
+        모든 이미지가 HTML 파일에 내장됩니다.<br>
+        단일 파일로 GitHub Pages 등에 바로 배포 가능합니다.
+      </p>
+    </div>
+
+  </div><!-- /panels -->
+
+  <div class="nav-row">
+    <button class="ghost" id="btnPrev" onclick="goStep(curStep-1)" style="display:none">← 이전</button>
+    <span></span>
+    <button class="prim" id="btnNext" onclick="goStep(curStep+1)">다음 →</button>
+  </div>
+</div>
+
+<script>
+/* ── Utils ── */
+const uid = () => Math.random().toString(36).slice(2, 9);
+const toB64 = file => new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result); fr.readAsDataURL(file); });
+const $ = id => document.getElementById(id);
+const show = (id, flex) => { $(id).style.display = flex ? 'flex' : 'block'; };
+const hide = id => { $(id).style.display = 'none'; };
+
+/* ── State ── */
+let curStep = 0;
+const proj = { title: '', subtitle: '', mainImage: null, keywordZones: [], popupViewers: [], quiz: [] };
+let selKzId = null, selVid = null, selHid = null;
+
+/* ── Step navigation ── */
+function goStep(n) {
+  if (n < 0 || n > 5) return;
+  document.querySelectorAll('.panel').forEach((p, i) => p.classList.toggle('on', i === n));
+  document.querySelectorAll('.sb-btn').forEach((b, i) => b.classList.toggle('on', i === n));
+  curStep = n;
+  $('progFill').style.width = ((n + 1) / 6 * 100) + '%';
+  $('progLbl').textContent = (n + 1) + ' / 6';
+  $('btnPrev').style.display = n > 0 ? '' : 'none';
+  $('btnNext').style.display = n < 5 ? '' : 'none';
+  if (n === 2) syncKzOverlay();
+  if (n === 3) syncVMainOverlay();
+  if (n === 5) renderChecks();
+}
+
+/* ── Step 1: Main image ── */
+async function loadMain(inp) {
+  if (!inp.files[0]) return;
+  const file = inp.files[0];
+  hide('mainPh');
+  show('mainPrev');
+
+  if (file.type === 'application/pdf') {
+    // PDF → 첫 페이지를 캔버스로 렌더링 → base64 JPEG
+    $('mainPrev').src = '';
+    $('mainPh').textContent = '⏳ PDF 변환 중...';
+    show('mainPh');
+    try {
+      const arrayBuf = await file.arrayBuffer();
+      const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuf }).promise;
+      const page = await pdfDoc.getPage(1);
+      const vp = page.getViewport({ scale: 2.0 });
+      const canvas = document.createElement('canvas');
+      canvas.width = vp.width; canvas.height = vp.height;
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+      proj.mainImage = canvas.toDataURL('image/jpeg', 0.92);
+      $('mainPrev').src = proj.mainImage;
+      hide('mainPh'); show('mainPrev'); show('mainDel');
+    } catch(e) {
+      $('mainPh').textContent = '❌ PDF 변환 실패: ' + e.message;
+    }
+  } else {
+    // 일반 이미지
+    proj.mainImage = await toB64(file);
+    $('mainPrev').src = proj.mainImage;
+    hide('mainPh'); show('mainPrev'); show('mainDel');
+  }
+}
+function clearMain() {
+  proj.mainImage = null;
+  hide('mainPrev'); show('mainPh'); hide('mainDel');
+}
+
+/* ── Step 2: Keyword zones ── */
+function syncKzOverlay() {
+  if (proj.mainImage) { $('kzImg').src = proj.mainImage; show('kzImg'); hide('kzPh'); }
+  renderKzMarkers();
+}
+function kzClick(e) {
+  if (!proj.mainImage || e.target.closest('.marker')) return;
+  const rect = $('kzWrap').getBoundingClientRect();
+  const x = Math.round((e.clientX - rect.left) / rect.width * 1000) / 10;
+  const y = Math.round((e.clientY - rect.top) / rect.height * 1000) / 10;
+  const z = { id: uid(), label: '키워드' + (proj.keywordZones.length + 1), x, y, title: '', desc: '', image: null };
+  proj.keywordZones.push(z);
+  selKzId = z.id;
+  renderKzMarkers(); renderKzList(); showKzForm();
+}
+function renderKzMarkers() {
+  $('kzWrap').querySelectorAll('.marker').forEach(m => m.remove());
+  proj.keywordZones.forEach((z, i) => {
+    const sel = z.id === selKzId;
+    const m = document.createElement('div');
+    m.className = 'marker';
+    m.style.cssText = `left:${z.x}%;top:${z.y}%;border-radius:18%;border:2px solid ${sel ? '#BA7517' : '#c8342a'};background:${sel ? 'rgba(186,117,23,.2)' : 'rgba(200,52,42,.12)'}`;
+    m.innerHTML = `<div class="marker-in" style="color:${sel ? '#BA7517' : '#c8342a'}">${z.label || i + 1}</div>`;
+    m.onclick = e => { e.stopPropagation(); selKzId = z.id; renderKzMarkers(); renderKzList(); showKzForm(); };
+    $('kzWrap').appendChild(m);
+  });
+}
+function renderKzList() {
+  const el = $('kzList'); el.innerHTML = '';
+  proj.keywordZones.forEach((z, i) => {
+    const d = document.createElement('div');
+    d.className = 'li' + (z.id === selKzId ? ' on' : '');
+    d.innerHTML = `<span class="badge" style="background:rgba(200,52,42,.15);color:#c8342a">${i + 1}</span><span style="flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${z.label || '(이름 없음)'}</span><button class="xbtn" onclick="delKz('${z.id}',event)">✕</button>`;
+    d.onclick = () => { selKzId = z.id; renderKzMarkers(); renderKzList(); showKzForm(); };
+    el.appendChild(d);
+  });
+}
+function showKzForm() {
+  const z = proj.keywordZones.find(z => z.id === selKzId);
+  if (!z) { hide('kzForm'); show('kzPlaceholder', true); return; }
+  show('kzForm', true); hide('kzPlaceholder');
+  $('kzLabel').value = z.label || '';
+  $('kzTitle').value = z.title || '';
+  $('kzDesc').value = z.desc || '';
+  if (z.image) { $('kzImgPrev').src = z.image; show('kzImgPrev'); hide('kzImgPh'); }
+  else { hide('kzImgPrev'); show('kzImgPh'); }
+}
+function kzUpd(f, v) {
+  const z = proj.keywordZones.find(z => z.id === selKzId); if (!z) return;
+  z[f] = v; if (f === 'label') renderKzMarkers();
+}
+async function kzLoadImg(inp) {
+  if (!inp.files[0]) return;
+  const z = proj.keywordZones.find(z => z.id === selKzId); if (!z) return;
+  z.image = await toB64(inp.files[0]);
+  $('kzImgPrev').src = z.image; show('kzImgPrev'); hide('kzImgPh');
+}
+function delKz(id, e) {
+  e && e.stopPropagation();
+  proj.keywordZones = proj.keywordZones.filter(z => z.id !== id);
+  if (selKzId === id) { selKzId = null; showKzForm(); }
+  renderKzMarkers(); renderKzList();
+}
+
+/* ── Step 3: Popup viewers ── */
+function renderVTabs() {
+  const tabs = $('vTabs'); tabs.innerHTML = '';
+  proj.popupViewers.forEach(v => {
+    const t = document.createElement('div');
+    t.className = 'vtab' + (v.id === selVid ? ' on' : '');
+    t.innerHTML = `<span>${v.name}</span><span class="xbtn" style="font-size:11px" onclick="delV('${v.id}',event)">✕</span>`;
+    t.onclick = () => { selVid = v.id; selHid = null; renderVTabs(); showVEditor(); };
+    tabs.appendChild(t);
+  });
+  const add = document.createElement('button');
+  add.className = 'prim'; add.style.cssText = 'padding:5px 12px;font-size:11px'; add.textContent = '+ 뷰어 추가';
+  add.onclick = addViewer; tabs.appendChild(add);
+  syncVMainOverlay();
+}
+function addViewer() {
+  const v = { id: uid(), name: '뷰어 ' + (proj.popupViewers.length + 1), mainImage: null, hotspots: [], x: 10, y: 10 };
+  proj.popupViewers.push(v); selVid = v.id; selHid = null;
+  renderVTabs(); showVEditor();
+}
+function showVEditor() {
+  const v = proj.popupViewers.find(v => v.id === selVid);
+  if (!v) { show('vEmpty'); hide('vEditor'); return; }
+  hide('vEmpty'); show('vEditor');
+  $('vName').value = v.name || '';
+  if (v.mainImage) { $('vWrapImg').src = v.mainImage; show('vWrapImg'); hide('vWrapPh'); $('vImgPrev').src = v.mainImage; show('vImgPrev'); hide('vImgPh'); }
+  else { hide('vWrapImg'); show('vWrapPh'); hide('vImgPrev'); show('vImgPh'); }
+  renderVHsMarkers(); renderVHsList(); showHsForm(); syncVMainOverlay();
+}
+function vUpd(f, val) {
+  const v = proj.popupViewers.find(v => v.id === selVid); if (!v) return;
+  v[f] = val; if (f === 'name') renderVTabs();
+}
+async function vLoadImg(inp) {
+  if (!inp.files[0]) return;
+  const v = proj.popupViewers.find(v => v.id === selVid); if (!v) return;
+  v.mainImage = await toB64(inp.files[0]); showVEditor();
+}
+function delV(id, e) {
+  e && e.stopPropagation();
+  proj.popupViewers = proj.popupViewers.filter(v => v.id !== id);
+  if (selVid === id) { selVid = null; selHid = null; }
+  renderVTabs(); showVEditor(); syncVMainOverlay();
+}
+function vHsClick(e) {
+  if (e.target.closest('.marker')) return;
+  const v = proj.popupViewers.find(v => v.id === selVid); if (!v || !v.mainImage) return;
+  const rect = $('vWrap').getBoundingClientRect();
+  const x = Math.round((e.clientX - rect.left) / rect.width * 1000) / 10;
+  const y = Math.round((e.clientY - rect.top) / rect.height * 1000) / 10;
+  const h = { id: uid(), label: '' + (v.hotspots.length + 1), x, y, title: '', desc: '', image: null };
+  v.hotspots.push(h); selHid = h.id; renderVHsMarkers(); renderVHsList(); showHsForm();
+}
+function renderVHsMarkers() {
+  $('vWrap').querySelectorAll('.marker').forEach(m => m.remove());
+  const v = proj.popupViewers.find(v => v.id === selVid); if (!v) return;
+  v.hotspots.forEach((h, i) => {
+    const sel = h.id === selHid;
+    const m = document.createElement('div');
+    m.className = 'marker';
+    m.style.cssText = `left:${h.x}%;top:${h.y}%;border-radius:50%;border:2px solid ${sel ? '#BA7517' : '#1D9E75'};background:${sel ? 'rgba(186,117,23,.2)' : 'rgba(29,158,117,.2)'}`;
+    m.innerHTML = `<div class="marker-in" style="color:${sel ? '#BA7517' : '#1D9E75'}">${h.label || i + 1}</div>`;
+    m.onclick = e => { e.stopPropagation(); selHid = h.id; renderVHsMarkers(); renderVHsList(); showHsForm(); };
+    $('vWrap').appendChild(m);
+  });
+}
+function renderVHsList() {
+  const el = $('vHsList'); el.innerHTML = '';
+  const v = proj.popupViewers.find(v => v.id === selVid); if (!v) return;
+  v.hotspots.forEach((h, i) => {
+    const d = document.createElement('div');
+    d.className = 'li' + (h.id === selHid ? ' on' : '');
+    d.innerHTML = `<span class="badge" style="background:rgba(29,158,117,.15);color:#1D9E75">${i + 1}</span><span style="flex:1;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.title || '(제목 없음)'}</span><button class="xbtn" onclick="delHs('${h.id}',event)">✕</button>`;
+    d.onclick = () => { selHid = h.id; renderVHsMarkers(); renderVHsList(); showHsForm(); };
+    el.appendChild(d);
+  });
+}
+function showHsForm() {
+  const v = proj.popupViewers.find(v => v.id === selVid);
+  const h = v?.hotspots.find(h => h.id === selHid);
+  if (!h) { hide('vHsForm'); show('vHsPlaceholder', true); return; }
+  show('vHsForm', true); hide('vHsPlaceholder');
+  $('hsLabel').value = h.label || '';
+  $('hsTitle').value = h.title || '';
+  $('hsDesc').value = h.desc || '';
+  if (h.image) { $('hsImgPrev').src = h.image; show('hsImgPrev'); hide('hsImgPh'); }
+  else { hide('hsImgPrev'); show('hsImgPh'); }
+}
+function hsUpd(f, val) {
+  const v = proj.popupViewers.find(v => v.id === selVid); if (!v) return;
+  const h = v.hotspots.find(h => h.id === selHid); if (!h) return;
+  h[f] = val; if (f === 'label') renderVHsMarkers();
+}
+async function hsLoadImg(inp) {
+  if (!inp.files[0]) return;
+  const v = proj.popupViewers.find(v => v.id === selVid); if (!v) return;
+  const h = v.hotspots.find(h => h.id === selHid); if (!h) return;
+  h.image = await toB64(inp.files[0]);
+  $('hsImgPrev').src = h.image; show('hsImgPrev'); hide('hsImgPh');
+}
+function delHs(hid, e) {
+  e && e.stopPropagation();
+  const v = proj.popupViewers.find(v => v.id === selVid); if (!v) return;
+  v.hotspots = v.hotspots.filter(h => h.id !== hid);
+  if (selHid === hid) { selHid = null; showHsForm(); }
+  renderVHsMarkers(); renderVHsList();
+}
+
+
+function syncVMainOverlay() {
+  const img = $('vMainImg'), ph = $('vMainPh');
+  if (proj.mainImage) { img.src = proj.mainImage; show('vMainImg'); hide('vMainPh'); }
+  else { hide('vMainImg'); show('vMainPh'); }
+  $('vMainWrap').querySelectorAll('.marker').forEach(m => m.remove());
+  proj.popupViewers.forEach((v) => {
+    const sel = v.id === selVid;
+    const m = document.createElement('div');
+    m.className = 'marker';
+    m.style.cssText = `left:${v.x||10}%;top:${v.y||10}%;border-radius:8px;border:2px solid ${sel ? '#BA7517' : 'rgba(255,255,255,.85)'};background:${sel ? 'rgba(186,117,23,.3)' : 'rgba(0,0,0,.55)'}`;
+    m.innerHTML = `<div class="marker-in" style="color:${sel ? '#f0d882' : '#fff'};font-size:9px;white-space:nowrap;padding:0 2px">${v.name}</div>`;
+    m.onclick = e => { e.stopPropagation(); selVid = v.id; selHid = null; renderVTabs(); showVEditor(); };
+    $('vMainWrap').appendChild(m);
+  });
+}
+function vMainClick(e) {
+  if (e.target.closest('.marker')) return;
+  if (!selVid || !proj.mainImage) return;
+  const rect = $('vMainWrap').getBoundingClientRect();
+  const x = Math.round((e.clientX - rect.left) / rect.width * 1000) / 10;
+  const y = Math.round((e.clientY - rect.top) / rect.height * 1000) / 10;
+  const v = proj.popupViewers.find(v => v.id === selVid);
+  if (!v) return;
+  v.x = x; v.y = y;
+  syncVMainOverlay();
+}
+
+/* ── AI 기능 ── */
+let apiKey = '';
+
+function toggleApiKeyVis() {
+  const inp = $('apiKeyInput');
+  const isPass = inp.type === 'password';
+  inp.type = isPass ? 'text' : 'password';
+  $('apiKeyToggle').textContent = isPass ? '숨김' : '표시';
+}
+
+function checkKey() {
+  if (!apiKey) { alert('API 키를 기본 설정 탭에 먼저 입력해주세요.'); return false; }
+  return true;
+}
+
+function setAiBtnLoading(id, on) {
+  const b = $(id); if (!b) return;
+  b.disabled = on;
+  b.innerHTML = on ? '<span class="ai-spin"></span> 생성 중...' : (id.includes('Img') ? '🔍 AI 제안' : '✨ AI 작성');
+  if (id === 'quizAiBtn') b.innerHTML = on ? '<span class="ai-spin"></span> 출제 중...' : '✨ AI 퀴즈 출제';
+}
+
+async function callClaude(messages, system) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1024, system: system || '', messages })
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || '오류 발생'); }
+  const d = await res.json();
+  return d.content[0].text;
+}
+
+function openAiModal(title, bodyHtml, footHtml) {
+  $('aiModalTitle').textContent = title;
+  $('aiModalBody').innerHTML = bodyHtml;
+  $('aiModalFoot').innerHTML = footHtml;
+  $('aiModal').classList.add('on');
+}
+function closeAiModal() { $('aiModal').classList.remove('on'); }
+$('aiModal').addEventListener('click', e => { if (e.target === $('aiModal')) closeAiModal(); });
+
+/* 키워드 설명 AI 작성 */
+async function aiKzDesc() {
+  if (!checkKey()) return;
+  const z = proj.keywordZones.find(z => z.id === selKzId); if (!z) return;
+  setAiBtnLoading('kzAiBtn', true);
+  try {
+    const keyword = z.title || z.label;
+    const msgs = [];
+    if (proj.mainImage) msgs.push({ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: proj.mainImage.split(',')[1] } }, { type: 'text', text: `이 이미지에서 "${keyword}"에 대해 학생에게 설명하는 2~3문장 한국어 설명문을 작성하세요. 설명문만 출력하세요.` }] });
+    else msgs.push({ role: 'user', content: `"${keyword}"에 대해 학생에게 설명하는 2~3문장 한국어 설명문을 작성하세요. 설명문만 출력하세요.` });
+    const result = await callClaude(msgs);
+    openAiModal('✨ AI 설명 작성 결과',
+      `<div class="ai-result-item"><div class="label">키워드: ${keyword}</div><div class="val">${result}</div></div>`,
+      `<button class="ghost" onclick="closeAiModal()">취소</button>
+       <button class="prim" onclick="applyKzDesc(${JSON.stringify(result).replace(/</g,'&lt;')})">적용</button>`
+    );
+  } catch(e) { alert('오류: ' + e.message); }
+  setAiBtnLoading('kzAiBtn', false);
+}
+function applyKzDesc(text) {
+  const z = proj.keywordZones.find(z => z.id === selKzId); if (!z) return;
+  z.desc = text; $('kzDesc').value = text; closeAiModal();
+}
+
+/* 키워드 이미지 검색어 AI 제안 */
+async function aiKzImgKeyword() {
+  if (!checkKey()) return;
+  const z = proj.keywordZones.find(z => z.id === selKzId); if (!z) return;
+  setAiBtnLoading('kzImgAiBtn', true);
+  try {
+    const keyword = z.title || z.label;
+    const result = await callClaude([{ role: 'user', content: `"${keyword}" 관련 이미지를 구글에서 검색할 때 쓸 한국어 검색어 3개를 쉼표로 구분해 한 줄로만 출력하세요.` }]);
+    $('kzImgKeyword').value = result.trim();
+    $('kzImgKeyword').style.color = '#e6edf3';
+  } catch(e) { alert('오류: ' + e.message); }
+  setAiBtnLoading('kzImgAiBtn', false);
+}
+
+/* 핫스팟 설명 AI 작성 */
+async function aiHsDesc() {
+  if (!checkKey()) return;
+  const v = proj.popupViewers.find(v => v.id === selVid);
+  const h = v?.hotspots.find(h => h.id === selHid); if (!h) return;
+  setAiBtnLoading('hsAiBtn', true);
+  try {
+    const subject = h.title || h.label;
+    const viewerName = v.name;
+    const msgs = [];
+    if (v.mainImage) msgs.push({ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: v.mainImage.split(',')[1] } }, { type: 'text', text: `이 이미지에서 "${subject}" 장면에 대해 학생에게 설명하는 3~4문장 한국어 설명문을 작성하세요. 설명문만 출력하세요.` }] });
+    else msgs.push({ role: 'user', content: `"${viewerName}" 콘텐츠의 "${subject}" 장면에 대해 학생에게 설명하는 3~4문장 한국어 설명문을 작성하세요. 설명문만 출력하세요.` });
+    const result = await callClaude(msgs);
+    openAiModal('✨ AI 설명 작성 결과',
+      `<div class="ai-result-item"><div class="label">장면: ${subject}</div><div class="val">${result}</div></div>`,
+      `<button class="ghost" onclick="closeAiModal()">취소</button>
+       <button class="prim" onclick="applyHsDesc(${JSON.stringify(result).replace(/</g,'&lt;')})">적용</button>`
+    );
+  } catch(e) { alert('오류: ' + e.message); }
+  setAiBtnLoading('hsAiBtn', false);
+}
+function applyHsDesc(text) {
+  const v = proj.popupViewers.find(v => v.id === selVid);
+  const h = v?.hotspots.find(h => h.id === selHid); if (!h) return;
+  h.desc = text; $('hsDesc').value = text; closeAiModal();
+}
+
+/* 핫스팟 이미지 검색어 AI 제안 */
+async function aiHsImgKeyword() {
+  if (!checkKey()) return;
+  const v = proj.popupViewers.find(v => v.id === selVid);
+  const h = v?.hotspots.find(h => h.id === selHid); if (!h) return;
+  setAiBtnLoading('hsImgAiBtn', true);
+  try {
+    const subject = h.title || h.label;
+    const result = await callClaude([{ role: 'user', content: `"${subject}" 관련 이미지를 구글에서 검색할 때 쓸 한국어 검색어 3개를 쉼표로 구분해 한 줄로만 출력하세요.` }]);
+    $('hsImgKeyword').value = result.trim();
+    $('hsImgKeyword').style.color = '#e6edf3';
+  } catch(e) { alert('오류: ' + e.message); }
+  setAiBtnLoading('hsImgAiBtn', false);
+}
+
+/* 퀴즈 AI 자동 출제 */
+async function aiQuiz() {
+  if (!checkKey()) return;
+  const count = parseInt($('aiQuizCount').value) || 3;
+  const title = $('fTitle').value || proj.title || '이 콘텐츠';
+  setAiBtnLoading('quizAiBtn', true);
+  try {
+    const sys = '당신은 교육 퀴즈 출제 전문가입니다. 반드시 JSON만 출력하고 다른 텍스트는 절대 포함하지 마세요.';
+    const prompt = `제목: "${title}"\n\n위 주제로 사지선다 퀴즈 ${count}개를 만들어 아래 JSON 형식으로만 출력하세요:\n[{"question":"질문","choices":["①","②","③","④"],"answer":0}]\nanswer는 0~3 인덱스. JSON 배열만 출력.`;
+    const msgs = [];
+    if (proj.mainImage) msgs.push({ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: proj.mainImage.split(',')[1] } }, { type: 'text', text: prompt }] });
+    else msgs.push({ role: 'user', content: prompt });
+    const raw = await callClaude(msgs, sys);
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const quizzes = JSON.parse(clean);
+    const previewHtml = quizzes.map((q, i) =>
+      `<div class="ai-result-item"><div class="label">Q${i+1}</div><div class="val">${q.question}</div>
+       <div style="margin-top:6px;font-size:11px;color:#8b949e">${q.choices.map((c,ci)=>`<span style="color:${ci===q.answer?'#4ade80':'#8b949e'}">${ci===q.answer?'✅ ':''} ${c}</span>`).join(' &nbsp; ')}</div></div>`
+    ).join('');
+    openAiModal('✨ AI 퀴즈 출제 결과', previewHtml,
+      `<button class="ghost" onclick="closeAiModal()">취소</button>
+       <button class="prim" onclick="applyAiQuiz(${JSON.stringify(JSON.stringify(quizzes)).slice(1,-1)})">전체 적용</button>`
+    );
+  } catch(e) { alert('퀴즈 생성 오류: ' + e.message); }
+  setAiBtnLoading('quizAiBtn', false);
+}
+function applyAiQuiz(jsonStr) {
+  try {
+    const quizzes = JSON.parse(jsonStr);
+    quizzes.forEach(q => proj.quiz.push({ id: uid(), question: q.question, choices: q.choices, answer: q.answer }));
+    renderQuiz(); closeAiModal();
+  } catch(e) { alert('적용 오류: ' + e.message); }
+}
+
+/* ── Step 4: Quiz ── */
+function addQuiz() {
+  proj.quiz.push({ id: uid(), question: '', choices: ['', '', '', ''], answer: 0 });
+  renderQuiz();
+}
+function renderQuiz() {
+  const el = $('quizList'); el.innerHTML = '';
+  proj.quiz.forEach((q, qi) => {
+    const d = document.createElement('div'); d.className = 'q-item';
+    const choicesHtml = q.choices.map((c, ci) => `
+      <label class="q-choice">
+        <input type="radio" name="ans_${q.id}" ${q.answer === ci ? 'checked' : ''} onchange="proj.quiz[${qi}].answer=${ci};renderQuiz()">
+        <input type="text" placeholder="선택지 ${ci + 1}" value="${c.replace(/"/g, '&quot;')}" oninput="proj.quiz[${qi}].choices[${ci}]=this.value">
+      </label>`).join('');
+    d.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:11px;color:#484f58;font-weight:500;flex-shrink:0">Q${qi + 1}</span>
+        <input type="text" placeholder="질문을 입력하세요" value="${q.question.replace(/"/g, '&quot;')}" oninput="proj.quiz[${qi}].question=this.value" style="flex:1">
+        <button class="xbtn" onclick="proj.quiz.splice(${qi},1);renderQuiz()">✕</button>
+      </div>
+      <div class="q-choices">${choicesHtml}</div>
+      <div style="font-size:10px;color:#484f58;margin-top:6px">● 정답: 선택지 ${q.answer + 1}</div>`;
+    el.appendChild(d);
+  });
+}
+
+/* ── Step 5: Checks & Export ── */
+function renderChecks() {
+  const checks = [
+    { ok: !!proj.title, label: '제목 입력' },
+    { ok: !!proj.mainImage, label: '메인 이미지' },
+    { ok: proj.keywordZones.length > 0, label: `키워드 팝업 영역 (${proj.keywordZones.length}개)` },
+    { ok: proj.popupViewers.length > 0, label: `팝업 뷰어 (${proj.popupViewers.length}개)` },
+    { ok: proj.quiz.length > 0, label: `퀴즈 (${proj.quiz.length}문제)` },
+  ];
+  $('checkList').innerHTML = checks.map(c => `<div class="check-row"><span>${c.ok ? '✅' : '⬜'}</span><span style="color:${c.ok ? '#e6edf3' : '#484f58'}">${c.label}</span></div>`).join('');
+}
+function doExport() {
+  proj.title = $('fTitle').value;
+  proj.subtitle = $('fSub').value;
+  const html = generateHTML(proj);
+  const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+  const a = document.createElement('a'); a.href = url; a.download = (proj.title || '인터랙티브_콘텐츠') + '.html'; a.click();
+  URL.revokeObjectURL(url);
+  show('doneMsg'); setTimeout(() => hide('doneMsg'), 3000);
+}
+
+/* ── HTML Generator ── */
+function generateHTML({ title, subtitle, mainImage, keywordZones, popupViewers, quiz }) {
+  const allVD = {};
+  popupViewers.forEach(v => { allVD[v.id] = {}; v.hotspots.forEach(h => { allVD[v.id][h.id] = { title: h.title, desc: h.desc, image: h.image || '' }; }); });
+
+  const kzOv = keywordZones.map(z =>
+    `<div class="kz" style="left:${z.x}%;top:${z.y}%" onclick="openKZ('${z.id}')">${z.label}</div>`
+  ).join('\n    ');
+
+  const kzM = keywordZones.map(z => `
+  <div class="kz-modal" id="kzm_${z.id}" hidden onclick="if(event.target===this)closeKZ('${z.id}')">
+    <div class="kz-card">
+      <button class="kz-x" onclick="closeKZ('${z.id}')">✕</button>
+      <div class="kz-title">${z.title || z.label}</div>
+      ${z.image ? `<img src="${z.image}" class="kz-img" alt="">` : ''}
+      <div class="kz-desc">${(z.desc || '').replace(/\n/g, '<br>')}</div>
+    </div>
+  </div>`).join('');
+
+  const vBtnsOv = popupViewers.map(v =>
+    `<div class="vbtn-ov" style="left:${v.x||10}%;top:${v.y||10}%" onclick="openV('${v.id}')">🔍 클릭 시 확대</div>`
+  ).join('\n    ');
+
+  const vOvs = popupViewers.map(v => {
+    const hsEls = v.hotspots.map((h, i) =>
+      `<div class="hs" style="left:${h.x}%;top:${h.y}%" onclick="selHS('${v.id}','${h.id}')" data-hid="${h.id}"><span class="hs-n">${h.label || i + 1}</span></div>`
+    ).join('\n        ');
+    return `
+  <div class="viewer" id="v_${v.id}" hidden>
+    <button class="v-x" onclick="closeV('${v.id}')">✕</button>
+    <div class="v-hd">${v.name}</div>
+    <div class="v-inner">
+      <div class="v-img-wrap">
+        <img src="${v.mainImage || ''}" class="v-img" alt="${v.name}">
+        ${hsEls}
+      </div>
+      <div class="v-panel" id="vp_${v.id}">
+        <div class="v-hint">핫스팟을 클릭하면<br>설명이 나타납니다</div>
+      </div>
+    </div>
+  </div>`;
+  }).join('');
+
+  const qH = quiz.map((q, qi) => `
+  <div class="q-item">
+    <div class="q-num">Q${qi + 1}</div>
+    <div class="q-text">${q.question}</div>
+    <div class="q-choices">
+      ${q.choices.map((c, ci) => `<button class="q-btn" onclick="ansQ(this,${ci},${q.answer})">${c}</button>`).join('')}
+    </div>
+    <div class="q-res"></div>
+  </div>`).join('');
+
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${title}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+body{background:#0d1117;min-height:100vh;font-family:'Noto Sans KR',sans-serif;color:#e6edf3;overflow-x:hidden}
+header{text-align:center;padding:44px 20px 30px;background:linear-gradient(180deg,rgba(201,151,42,.07) 0%,transparent 100%);border-bottom:1px solid rgba(201,151,42,.18)}
+.h-title{font-family:'Noto Serif KR',serif;font-size:clamp(1.6rem,4vw,2.5rem);color:#f0d882;letter-spacing:.12em;text-shadow:0 2px 20px rgba(0,0,0,.7)}
+.h-sub{margin-top:9px;color:rgba(201,151,42,.72);font-size:.82rem;letter-spacing:.22em}
+.h-line{width:140px;height:1px;background:linear-gradient(90deg,transparent,rgba(201,151,42,.45),transparent);margin:14px auto 0}
+.main-sec{max-width:900px;margin:32px auto;padding:0 20px}
+.main-frame{position:relative;border:2px solid rgba(201,151,42,.35);border-radius:4px;box-shadow:0 0 80px rgba(0,0,0,.75);overflow:visible}
+.main-img{display:block;width:100%;border-radius:3px}
+.kz{position:absolute;transform:translate(-50%,-50%);border:2px solid rgba(200,52,42,.85);border-radius:10px;padding:3px 10px;cursor:pointer;font-size:11px;font-weight:700;color:#111;background:rgba(255,255,255,.9);transition:all .2s;white-space:nowrap;letter-spacing:.04em;user-select:none;animation:kzPulse 2.6s ease-in-out infinite}
+.kz:hover{border-color:#c8342a;background:#fff;animation:none;transform:translate(-50%,-50%) scale(1.06)}
+@keyframes kzPulse{0%,100%{box-shadow:0 0 0 0 rgba(200,52,42,.28)}55%{box-shadow:0 0 0 9px transparent}}
+.kz-modal{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);backdrop-filter:blur(8px)}
+.kz-card{background:linear-gradient(160deg,#1c2128 0%,#161b22 100%);border:1px solid rgba(201,151,42,.28);border-radius:14px;max-width:440px;width:calc(100% - 40px);padding:28px 24px;position:relative;box-shadow:0 24px 80px rgba(0,0,0,.85);animation:fadeUp .28s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.kz-x{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.09);border:none;color:#8b949e;cursor:pointer;font-size:14px;transition:all .2s}
+.kz-x:hover{background:rgba(255,255,255,.18);color:#e6edf3}
+.kz-title{font-family:'Noto Serif KR',serif;font-size:1.15rem;color:#f0d882;margin-bottom:14px;padding-right:24px;line-height:1.4}
+.kz-img{width:100%;max-height:220px;object-fit:cover;border-radius:9px;margin-bottom:14px;display:block}
+.kz-desc{font-size:.87rem;color:rgba(230,237,243,.8);line-height:1.78}
+.vbtn-ov{position:absolute;transform:translate(-50%,-50%);background:rgba(0,0,0,.72);border:2px solid rgba(255,255,255,.8);border-radius:8px;padding:6px 14px;cursor:pointer;color:#fff;font-size:11px;font-weight:700;white-space:nowrap;letter-spacing:.04em;user-select:none;animation:vbPulse 2.6s ease-in-out infinite;transition:all .2s}
+.vbtn-ov:hover{background:rgba(0,0,0,.92);border-color:#fff;animation:none;transform:translate(-50%,-50%) scale(1.07)}
+@keyframes vbPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.22)}55%{box-shadow:0 0 0 10px transparent}}
+.viewer{position:fixed;inset:0;z-index:300;background:rgba(7,10,15,.96);backdrop-filter:blur(16px);padding:60px 20px 20px;display:flex;flex-direction:column}
+.v-x{position:fixed;top:16px;right:16px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#e6edf3;cursor:pointer;font-size:18px;transition:background .2s;z-index:10}
+.v-x:hover{background:rgba(255,255,255,.2)}
+.v-hd{position:fixed;top:0;left:0;right:60px;padding:18px 24px;font-family:'Noto Serif KR',serif;font-size:.95rem;color:rgba(201,151,42,.8);letter-spacing:.1em;border-bottom:1px solid rgba(201,151,42,.12)}
+.v-inner{display:flex;gap:20px;flex:1;min-height:0;max-width:1140px;margin:0 auto;width:100%}
+@media(max-width:700px){.v-inner{flex-direction:column}.v-panel{flex:none!important;width:100%!important}}
+.v-img-wrap{flex:1 1 auto;min-width:0;position:relative;align-self:flex-start;border:2px solid rgba(201,151,42,.25);border-radius:6px;overflow:visible}
+.v-img{display:block;width:100%;border-radius:5px}
+.hs{position:absolute;transform:translate(-50%,-50%);width:7%;padding-top:7%;border-radius:50%;border:2.5px solid #5bbcb0;background:rgba(91,188,176,.26);cursor:pointer;transition:all .2s;animation:hsp 2.6s ease-in-out infinite;z-index:5}
+.hs:hover,.hs.on{animation:none;border-color:#fbbf24;background:rgba(251,191,36,.22)}
+.hs:hover{transform:translate(-50%,-50%) scale(1.1)}
+@keyframes hsp{0%,100%{box-shadow:0 0 0 0 rgba(91,188,176,.28)}55%{box-shadow:0 0 0 9px transparent}}
+.hs-n{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;pointer-events:none}
+.v-panel{flex:0 0 290px;background:rgba(255,255,255,.04);border:1px solid rgba(201,151,42,.15);border-radius:10px;overflow:hidden;align-self:stretch;display:flex;flex-direction:column;max-height:calc(100vh - 100px)}
+.v-hint{flex:1;display:flex;align-items:center;justify-content:center;color:rgba(230,237,243,.28);font-size:.78rem;text-align:center;padding:24px;line-height:1.6}
+.v-pi{display:flex;flex-direction:column;height:100%}
+.v-pimg{width:100%;max-height:200px;object-fit:contain;background:#040608;display:block;flex-shrink:0}
+.v-pbody{padding:16px;overflow-y:auto;flex:1}
+.v-ptitle{font-family:'Noto Serif KR',serif;color:#f0d882;font-size:.95rem;margin-bottom:9px;line-height:1.4}
+.v-pdesc{font-size:.8rem;color:rgba(230,237,243,.75);line-height:1.78}
+.quiz-sec{max-width:900px;margin:40px auto 70px;padding:0 20px}
+.quiz-hd{font-family:'Noto Serif KR',serif;font-size:1.2rem;color:#f0d882;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid rgba(201,151,42,.18)}
+.q-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:22px;margin-bottom:12px}
+.q-num{font-size:.7rem;color:rgba(201,151,42,.65);font-weight:700;letter-spacing:.1em;margin-bottom:6px}
+.q-text{font-size:.95rem;margin-bottom:16px;line-height:1.65}
+.q-choices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:500px){.q-choices{grid-template-columns:1fr}}
+.q-btn{padding:11px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.11);border-radius:7px;color:rgba(230,237,243,.85);font-size:.85rem;cursor:pointer;text-align:left;transition:all .2s;font-family:'Noto Sans KR',sans-serif;width:100%}
+.q-btn:hover:not(:disabled){background:rgba(255,255,255,.12)}
+.q-btn.ok{background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.42);color:#4ade80}
+.q-btn.ng{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.36);color:#f87171}
+.q-res{margin-top:10px;font-size:.83rem;font-weight:600;min-height:1.2em}
+</style>
+</head>
+<body>
+<header>
+  <div class="h-title">${title}</div>
+  ${subtitle ? `<div class="h-sub">${subtitle}</div>` : ''}
+  <div class="h-line"></div>
+</header>
+
+<div class="main-sec">
+  <div class="main-frame">
+    ${mainImage ? `<img src="${mainImage}" class="main-img" alt="${title}">` : ''}
+    ${kzOv}
+    ${vBtnsOv}
+  </div>
+</div>
+
+
+
+${kzM}
+${vOvs}
+
+${quiz.length > 0 ? `<div class="quiz-sec">
+  <div class="quiz-hd">확인 문제</div>
+  ${qH}
+</div>` : ''}
+
+<script>
+const VD = ${JSON.stringify(allVD)};
+function openKZ(id){document.getElementById('kzm_'+id).hidden=false;document.body.style.overflow='hidden';}
+function closeKZ(id){document.getElementById('kzm_'+id).hidden=true;document.body.style.overflow='';}
+function openV(id){document.getElementById('v_'+id).hidden=false;document.body.style.overflow='hidden';}
+function closeV(id){document.getElementById('v_'+id).hidden=true;document.body.style.overflow='';document.querySelectorAll('#v_'+id+' .hs').forEach(h=>h.classList.remove('on'));}
+function selHS(vid,hid){
+  const d=(VD[vid]||{})[hid];if(!d)return;
+  const p=document.getElementById('vp_'+vid);
+  p.innerHTML='<div class="v-pi">'+(d.image?'<img src="'+d.image+'" class="v-pimg" alt="">':'')+'<div class="v-pbody"><div class="v-ptitle">'+d.title+'</div><div class="v-pdesc">'+d.desc+'</div></div></div>';
+  document.querySelectorAll('#v_'+vid+' .hs').forEach(h=>h.classList.toggle('on',h.dataset.hid===hid));
+}
+function ansQ(btn,ci,correct){
+  const item=btn.closest('.q-item');
+  item.querySelectorAll('.q-btn').forEach(b=>b.disabled=true);
+  const res=item.querySelector('.q-res');
+  if(ci===correct){btn.classList.add('ok');res.innerHTML='<span style="color:#4ade80">✅ 정답입니다!</span>';}
+  else{btn.classList.add('ng');item.querySelectorAll('.q-btn')[correct].classList.add('ok');res.innerHTML='<span style="color:#f87171">❌ 오답입니다.</span>';}
+}
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  document.querySelectorAll('.kz-modal:not([hidden])').forEach(el=>{el.hidden=true;document.body.style.overflow='';});
+  document.querySelectorAll('.viewer:not([hidden])').forEach(el=>{el.hidden=true;document.body.style.overflow='';});
+});
+<\/script>
+
+<!-- AI 결과 모달 -->
+<div class="ai-modal" id="aiModal">
+  <div class="ai-card">
+    <div class="ai-card-head">
+      <span class="ai-card-title" id="aiModalTitle">✨ AI 결과</span>
+      <button class="xbtn" onclick="closeAiModal()" style="font-size:16px">✕</button>
+    </div>
+    <div class="ai-card-body" id="aiModalBody"></div>
+    <div class="ai-card-foot" id="aiModalFoot"></div>
+  </div>
+</div>
+</body>
+</html>`;
+}
+
+/* ── Init ── */
+renderVTabs();
+</script>
+</body>
+</html>
